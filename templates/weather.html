@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Weather App</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700&display=swap" rel="stylesheet">
+    <!-- Add Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        body { 
+            font-family: 'Nunito', sans-serif;
+            background: #ffffff;
+            color: #333333;
+            padding: 20px;
+        }
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .weather-section, .forecast-section { 
+            margin-top: 20px; 
+        }
+        .forecast-table {
+            table-layout: fixed;
+            width: 100%;
+            font-size: 0.9rem;
+        }
+        .forecast-table th, .forecast-table td {
+            padding: 8px;
+            text-align: center;
+            vertical-align: middle;
+        }
+        .large-text {
+            font-size: 2rem;
+        }
+        .weather-icon {
+            max-width: auto;
+            height: 250px;
+            vertical-align: top;
+        }
+        .forecast-table .weather-icon {
+            height: 50px;
+        }
+        .weather-description {
+            position: absolute;
+            bottom: 10px; /* Position the text 10px from the bottom */
+            left: 50%; /* Center horizontally */
+            transform: translateX(-50%); /* Adjust for exact centering */
+            color: black; /* Text color */
+            font-size: 1rem; /* Text size */
+            max-width: 90%; /* Prevent text from exceeding container width */
+            word-wrap: break-word; /* Allow long words to break */
+            text-align: center; /* Center the text */
+        }
+        @media (max-width: 768px) {
+            .weather-description {
+                font-size: 0.8rem; /* Adjust text size for smaller screens */
+            }
+        }
+
+        /* Toast Styles */
+        .toast-header {
+            background-color: #f8f9fa;
+        }
+    </style>
+    <!-- Update to the latest html2canvas version -->
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</head>
+<body>
+    <div id="topSection">
+        <h1><i class="bi bi-geo-alt-fill"></i>   {{ weather.location }}</h1>
+        <div class="container">
+            <div class="row align-items-center weather-section">
+                <div class="col-md-2 text-center">
+                    <div class="weather-container position-relative d-inline-block">
+                        <img 
+                            src="http://openweathermap.org/img/wn/{{ weather.icon }}@2x.png" 
+                            alt="Weather Icon" 
+                            class="weather-icon" 
+                            crossorigin="anonymous"
+                        >
+                        <p class="weather-description">{{ weather.description }}</p>
+                    </div>
+                </div>
+                <div class="col-md-8 text-center">
+                    <p>Temperature: {{ weather.temp }}°C</p>
+                    <p>Feels like: {{ weather.feels_like }}°C</p>
+                    <p>Sunrise: {{ weather.sunrise }}</p>
+                    <p>Sunset: {{ weather.sunset }}</p>
+                    <button id="shareButton" class="btn btn-primary">
+                        <i class="bi bi-share"></i> Share
+                    </button>
+                </div>
+                <div class="col-md-2 text-center">
+                    <p class="large-text" id="currentTime"></p>
+                    <p>{{ weather.date }}</p>
+                    <p class="bg-light text-dark p-2"><strong>{{ weather.day }}</strong></p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="forecast-section">
+        <h3>4-Day Forecast</h3>
+        <table class="table table-bordered forecast-table">
+            <thead class="table-light">
+                <tr>
+                    <th>Day</th>
+                    <th>Icon</th>
+                    <th>Description</th>
+                    <th>Temperature (°C)</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for day in forecast %}
+                    <tr>
+                        <td><strong>{{ day.day }}</strong></td>
+                        <td>
+                            <img 
+                                src="http://openweathermap.org/img/wn/{{ day.icon }}@2x.png" 
+                                alt="Weather Icon" 
+                                class="weather-icon" 
+                                crossorigin="anonymous"
+                            >
+                        </td>
+                        <td>{{ day.description }}</td>
+                        <td>{{ day.temp }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Toast Container -->
+    <div class="position-fixed bottom-0 end-0 p-3" style="z-index: 11">
+        <div id="toast" class="toast hide" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="toast-header">
+                <strong class="me-auto">Notification</strong>
+                <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+            <div class="toast-body" id="toastBody">
+                <!-- Dynamic content -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function updateTime() {
+            const now = new Date();
+            const options = { hour: 'numeric', minute: 'numeric', second: 'numeric', hour12: true };
+            const formattedTime = now.toLocaleTimeString('en-US', options);
+        
+            document.getElementById('currentTime').textContent = formattedTime;
+        }
+        
+        // Update time initially
+        window.onload = function() {
+            updateTime();
+            // Update time every second
+            setInterval(updateTime, 1000);
+        }
+
+        // Share Button Functionality
+        async function shareScreenshot() {
+            try {
+                const topSection = document.getElementById('topSection');
+                if (!topSection) {
+                    console.error('topSection element not found.');
+                    showToast('Error', 'Unable to find the section to share.');
+                    return;
+                }
+
+                console.log('Capturing screenshot...');
+                const canvas = await html2canvas(topSection, { useCORS: true });
+                console.log('Screenshot captured, converting to blob...');
+
+                canvas.toBlob(async (blob) => {
+                    if (blob) {
+                        console.log('Blob created, writing to clipboard...');
+                        const item = new ClipboardItem({ 'image/png': blob });
+                        await navigator.clipboard.write([item]);
+                        console.log('Screenshot copied to clipboard.');
+                        showToast('Success', 'Screenshot copied to clipboard!');
+                    } else {
+                        console.error('Failed to create blob from canvas.');
+                        showToast('Error', 'Failed to capture screenshot. Please try again.');
+                    }
+                }, 'image/png');
+            } catch (error) {
+                console.error('Error sharing screenshot:', error);
+                if (error.name === 'SecurityError') {
+                    showToast('Error', 'Clipboard access is restricted. Please allow clipboard access to share screenshots.');
+                } else {
+                    showToast('Error', 'Unable to copy screenshot to clipboard. Please try again later.');
+                }
+            }
+        }
+
+        function showToast(title, message) {
+            const toastEl = document.getElementById('toast');
+            const toastBody = document.getElementById('toastBody');
+            if (toastEl && toastBody) {
+                toastEl.querySelector('.toast-header strong').textContent = title;
+                toastBody.textContent = message;
+                window.toast.show();
+            }
+        }
+
+        // Attach Event Listener After DOM is Loaded
+        document.addEventListener('DOMContentLoaded', () => {
+            const shareButton = document.getElementById('shareButton');
+            if (shareButton) {
+                shareButton.addEventListener('click', shareScreenshot);
+            } else {
+                console.error('shareButton element not found.');
+            }
+
+            // Initialize Bootstrap Toast
+            const toastEl = document.getElementById('toast');
+            window.toast = new bootstrap.Toast(toastEl);
+        });
+    </script>
+</body>
+</html>
