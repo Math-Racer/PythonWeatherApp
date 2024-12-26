@@ -1,3 +1,5 @@
 my_note.md
 /__pycache__/
 .env
+/.pytest_cache/
+/tests/__pycache__/
