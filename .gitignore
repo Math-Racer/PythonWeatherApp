@@ -3,3 +3,4 @@ my_note.md
 .env
 /.pytest_cache/
 /tests/__pycache__/
+/venv/

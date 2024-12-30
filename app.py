@@ -1,16 +1,8 @@
-import logging
 from flask import Flask, render_template, request, redirect, url_for, session
 import requests
 from dotenv import load_dotenv
 import os
 from datetime import datetime, timedelta
-
-# Configure logging
-logging.basicConfig(
-    filename='weather_app.log',
-    level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s'
-)
 
 load_dotenv()
 api_key = os.getenv('OPENWEATHER')
@@ -70,10 +62,6 @@ def get_weather():
             'sunset': sun_set,
         }
 
-        # Log weather information
-        logging.info(
-            f"Weather lookup - Coordinates: ({lat}, {lon}), Temperature: {weather['temp']}°C, Description: {weather['description']}"
-        )
 
         # Process the next 4 days' forecasts
         forecasts = {}
@@ -123,4 +111,4 @@ def weather_result():
     return render_template('weather.html', weather=weather, forecast=forecast)
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(host='0.0.0.0', port=5000)
